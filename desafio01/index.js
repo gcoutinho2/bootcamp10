@@ -5,62 +5,72 @@ const server = express();
 server.use(express.json());
 
 const projects = [];
-let count = 0;
 
 function checkProjectExists(req, res, next) {
-  const project = projects[req.params.id];
+  const { id } = req.params.id;
+  const project = projects.find(p => p.id == id);
 
   if (!project) {
     return res.status(400).json({ error: 'Project does not exists' });
   }
 
-  req.project = project;
-
   return next();
 };
 
-function countRequest(req, res, next) {
-  count++;
-
-  console.log(count, 'requests');
+function countRequests(req, res, next) {
+  console.count('requests');
 
   return next();
 }
 
-server.post('/projects', countRequest, (req, res) => {
-  const project = req.body;
+server.use(countRequests);
+
+server.post('/projects', (req, res) => {
+  const {id, title} = req.body;
+
+  const project = {
+    id,
+    title,
+    tasks: []
+  };
 
   projects.push(project);
 
   return res.json(projects);
 });
 
-server.get('/projects', countRequest, (req, res) => {
+server.get('/projects', (req, res) => {
   return res.json(projects);
 });
 
-server.put('/projects/:id', countRequest, checkProjectExists, (req, res) => {
+server.put('/projects/:id', checkProjectExists, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  projects[id].title = title;
+  const project = projects.find(p => p.id == id);
+
+  project.title = title;
 
   return res.json(projects);
 });
 
-server.delete('/projects/:id', countRequest, checkProjectExists, (req, res) => {
+server.delete('/projects/:id', checkProjectExists, (req, res) => {
   const { id } = req.params;
 
-  projects.splice(id , 1);
+  const projectIndex = projects.findIndex(p => p.id == id);
+
+  projects.splice(projectIndex , 1);
 
   return res.send();
 });
 
-server.post('/projects/:id/tasks', countRequest, checkProjectExists, (req, res) => {
+server.post('/projects/:id/tasks', checkProjectExists, (req, res) => {
   const { id } = req.params;
   const { title } = req.body;
 
-  projects[id].tasks.push(title);
+  const project = projects.find(p => p.id == id);
+
+  project.tasks.push(title);
 
   return res.json(projects);
 });
